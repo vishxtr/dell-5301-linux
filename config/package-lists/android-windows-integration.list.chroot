@@ -1,0 +1,24 @@
+# Android Mirroring, Control & Phone Connectivity
+scrcpy
+adb
+fastboot
+android-sdk-platform-tools-common
+gnome-shell-extension-gsconnect
+
+# Windows Application Compatibility (Wine & WineTricks)
+wine
+wine64
+winetricks
+cabextract
+zenity
+
+# Universal App Store (Flatpak / Flathub for Bottles, Steam, Discord, etc.)
+flatpak
+gnome-software-plugin-flatpak
+
+# Container & Networking Prerequisites for Waydroid (Android on Linux)
+lxc
+dnsmasq-base
+iptables
+curl
+ca-certificates
