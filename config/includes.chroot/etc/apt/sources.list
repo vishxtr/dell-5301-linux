@@ -1,0 +1,11 @@
+# Debian 12 Bookworm Official Repositories
+deb http://deb.debian.org/debian/ bookworm main contrib non-free non-free-firmware
+deb-src http://deb.debian.org/debian/ bookworm main contrib non-free non-free-firmware
+
+# Security updates
+deb http://security.debian.org/debian-security bookworm-security main contrib non-free non-free-firmware
+deb-src http://security.debian.org/debian-security bookworm-security main contrib non-free non-free-firmware
+
+# Fast bugfix & package updates
+deb http://deb.debian.org/debian/ bookworm-updates main contrib non-free non-free-firmware
+deb-src http://deb.debian.org/debian/ bookworm-updates main contrib non-free non-free-firmware
