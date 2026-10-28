@@ -1,31 +1,38 @@
-# Dell Inspiron 5301 Hardware & Driver Stack
+# Dell Inspiron 5301 Native Hardware & Driver Stack
 
 # Core Linux Kernel & Microcode
 linux-image-amd64
 intel-microcode
 
-# Wi-Fi 6 (Intel AX201) & Bluetooth Firmware
+# Wi-Fi 6 (Intel AX201) & Fallback Realtek/Qualcomm + Bluetooth
 firmware-iwlwifi
+firmware-realtek
 firmware-misc-nonfree
 firmware-linux
 firmware-linux-nonfree
+wireless-regdb
+wpasupplicant
 bluez
 bluez-firmware
 
-# Realtek Audio & Intel SOF (Sound Open Firmware - Essential for 11th Gen Tiger Lake mic/speakers)
+# Realtek ALC3204 & Intel SOF (Sound Open Firmware - Essential for 11th Gen Tiger Lake mic/speakers)
 firmware-sof-signed
+alsa-ucm-conf
 alsa-utils
 
-# Intel Iris Xe Hardware Video Acceleration & Vulkan
+# Intel Iris Xe (Gen 12) GPU Native 3D & Hardware Video Acceleration
 intel-media-va-driver-non-free
 mesa-va-drivers
 mesa-vulkan-drivers
+libgl1-mesa-dri
 i965-va-driver-shaders
 
-# Dell Power, Thermals & USB-C Thunderbolt
+# Dell Power, Thermals, NVMe & USB-C Thunderbolt
 thermald
 power-profiles-daemon
 bolt
 upower
 acpi-support
 acpid
+nvme-cli
+i2c-tools
