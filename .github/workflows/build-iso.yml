@@ -88,7 +88,6 @@ jobs:
             --memtest none \
             --system live \
             --security false \
-            --updates false \
             --apt-indices none \
             --apt-recommends true \
             --iso-application "${{ inputs.distro_name || 'DellOS-5301' }}" \
