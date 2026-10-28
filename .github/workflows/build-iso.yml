@@ -162,7 +162,22 @@ jobs:
             echo "Notice: RCLONE_CONFIG secret is not configured. Skipping Google Drive upload."
           fi
 
-      - name: Create GitHub Release & Upload ISO (via official gh CLI)
+      - name: Upload Single ISO to GitHub Actions Artifacts (Up to 10 GB)
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.prepare.outputs.iso_name }}
+          path: ${{ steps.prepare.outputs.iso_path }}
+          retention-days: 30
+
+      - name: Split Large ISO for GitHub Releases (Bypasses GitHub 2GB Limit)
+        run: |
+          cd build
+          FINAL_NAME="${{ steps.prepare.outputs.iso_name }}"
+          echo "Splitting 3.5GB ISO into <2GB chunks for GitHub Releases..."
+          split -b 1800M "$FINAL_NAME" "${FINAL_NAME}.part-"
+          ls -lh ${FINAL_NAME}.part-*
+
+      - name: Create GitHub Release & Upload Assets (via official gh CLI)
         if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch' || github.event_name == 'push'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -170,7 +185,7 @@ jobs:
           cd build
           TAG_NAME="${{ inputs.release_tag || format('v1.0.{0}', github.run_number) }}"
           DIST_NAME="${{ inputs.distro_name || 'DellOS-5301' }}"
-          FINAL_NAME=$(ls *.iso | head -n 1)
+          FINAL_NAME="${{ steps.prepare.outputs.iso_name }}"
 
           cat <<'EOF' > release_notes.md
           ## 🚀 Futuristic Dell Inspiron 5301 Custom Linux Release
@@ -181,18 +196,32 @@ jobs:
           - **Windows Support:** Wine (32-bit & 64-bit multiarch) + Flathub Bottles
           - **Futuristic Suite:** Starship prompt, Kitty terminal (frosted glass), Cava audio visualizer, Cmatrix, Hollywood HUD, Ollama AI engine
 
-          ### Verification
-          Verify the integrity of your download:
+          ---
+
+          ### 📥 How to Reassemble the ISO (Due to GitHub 2GB File Limit)
+          Download all `.part-` files and run one command to join them:
+          
+          **On Linux / macOS:**
           ```bash
-          sha256sum -c DellOS-5301-*.iso.sha256
+          cat DellOS-5301-*.part-* > DellOS-5301.iso
+          ```
+          
+          **On Windows (Command Prompt):**
+          ```cmd
+          copy /b DellOS-5301-*.part-* DellOS-5301.iso
+          ```
+
+          ### Verification Checksum
+          ```bash
+          sha256sum -c DellOS-5301-*.sha256
           ```
           EOF
 
           # Delete existing release/tag with same name if already exists
           gh release delete "$TAG_NAME" --yes 2>/dev/null || true
 
-          echo "Publishing release $TAG_NAME with large-file chunked upload..."
+          echo "Publishing release $TAG_NAME to GitHub Releases..."
           gh release create "$TAG_NAME" \
-            "$FINAL_NAME" "${FINAL_NAME}.sha256" \
+            ${FINAL_NAME}.part-* "${FINAL_NAME}.sha256" \
             --title "${DIST_NAME} ${TAG_NAME}" \
             --notes-file release_notes.md
