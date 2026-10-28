@@ -11,7 +11,7 @@ on:
       distro_name:
         description: 'Distro Name'
         required: true
-        default: 'CustomOS'
+        default: 'DellOS-5301'
       release_tag:
         description: 'Release Tag (e.g. v1.0.0)'
         required: true
@@ -20,7 +20,7 @@ on:
         description: 'Upload to Google Drive? (Requires RCLONE_CONFIG secret)'
         type: boolean
         required: true
-        default: true
+        default: false
 
 jobs:
   build:
@@ -68,10 +68,19 @@ jobs:
         run: |
           mkdir -p build && cd build
           
-          # Initialize live-build configuration
+          # Initialize live-build configuration explicitly in Debian mode
           sudo lb config \
+            --mode debian \
             --distribution bookworm \
+            --parent-distribution bookworm \
+            --mirror-bootstrap "http://deb.debian.org/debian/" \
+            --mirror-chroot "http://deb.debian.org/debian/" \
+            --mirror-binary "http://deb.debian.org/debian/" \
+            --parent-mirror-bootstrap "http://deb.debian.org/debian/" \
+            --parent-mirror-chroot "http://deb.debian.org/debian/" \
+            --parent-mirror-binary "http://deb.debian.org/debian/" \
             --archive-areas "main contrib non-free non-free-firmware" \
+            --parent-archive-areas "main contrib non-free non-free-firmware" \
             --architectures amd64 \
             --linux-flavours amd64 \
             --binary-images iso-hybrid \
@@ -80,9 +89,9 @@ jobs:
             --system live \
             --apt-indices none \
             --apt-recommends true \
-            --iso-application "${{ inputs.distro_name || 'CustomOS' }}" \
+            --iso-application "${{ inputs.distro_name || 'DellOS-5301' }}" \
             --iso-publisher "Custom OS Builder" \
-            --iso-volume "${{ inputs.distro_name || 'CustomOS' }}-$(date +%Y%m%d)"
+            --iso-volume "${{ inputs.distro_name || 'DellOS-5301' }}-$(date +%Y%m%d)"
 
           # Copy custom package lists
           sudo mkdir -p config/package-lists
@@ -103,6 +112,7 @@ jobs:
       - name: Build ISO
         run: |
           cd build
+          set -o pipefail
           echo "=== Starting ISO Build ==="
           sudo lb build 2>&1 | tee build.log
 
@@ -112,11 +122,12 @@ jobs:
           cd build
           ISO_FILE=$(ls *.iso 2>/dev/null | head -n 1)
           if [ -z "$ISO_FILE" ]; then
-            echo "ERROR: ISO file was not generated!"
+            echo "ERROR: ISO file was not generated! Printing tail of build.log:"
+            tail -n 100 build.log
             exit 1
           fi
 
-          DIST_NAME="${{ inputs.distro_name || 'CustomOS' }}"
+          DIST_NAME="${{ inputs.distro_name || 'DellOS-5301' }}"
           FINAL_NAME="${DIST_NAME}-$(date +%Y%m%d)-amd64.iso"
           sudo mv "$ISO_FILE" "$FINAL_NAME"
 
@@ -130,7 +141,7 @@ jobs:
           echo "checksum_path=build/${FINAL_NAME}.sha256" >> $GITHUB_OUTPUT
 
       - name: Upload ISO to Google Drive (via rclone)
-        if: ${{ inputs.upload_gdrive == true || github.event_name == 'push' }}
+        if: ${{ inputs.upload_gdrive == true }}
         env:
           RCLONE_CONFIG_DATA: ${{ secrets.RCLONE_CONFIG }}
         run: |
@@ -145,25 +156,24 @@ jobs:
             echo "Google Drive upload completed successfully!"
           else
             echo "Notice: RCLONE_CONFIG secret is not configured. Skipping Google Drive upload."
-            echo "To enable Google Drive upload, add your rclone.conf contents as RCLONE_CONFIG in GitHub Repository Secrets."
           fi
 
       - name: Create GitHub Release & Upload ISO
         uses: softprops/action-gh-release@v2
-        if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
+        if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch' || github.event_name == 'push'
         with:
-          tag_name: ${{ inputs.release_tag || format('v{0}', github.run_number) }}
-          name: "${{ inputs.distro_name || 'CustomOS' }} ${{ inputs.release_tag || format('v{0}', github.run_number) }}"
+          tag_name: ${{ inputs.release_tag || format('v1.0.{0}', github.run_number) }}
+          name: "${{ inputs.distro_name || 'DellOS-5301' }} ${{ inputs.release_tag || format('v1.0.{0}', github.run_number) }}"
           body: |
-            ## Custom Linux Distribution Release
-            - **Base:** Debian 12 Bookworm (Stable)
-            - **Desktop Environment:** GNOME (Wayland + X11)
-            - **Architecture:** x86_64 (amd64)
-            - **Kernel:** Linux amd64 with full non-free hardware firmware
-            - **Built on:** ${{ github.event.repository.updated_at }}
+            ## 🚀 Futuristic Dell Inspiron 5301 Custom Linux Release
+            - **Target Laptop:** Dell Inspiron 5301 (11th Gen Core i5, Iris Xe Graphics, 8GB RAM)
+            - **Base OS:** Debian 12 Bookworm (Stable) + GNOME Wayland
+            - **Memory Optimization:** 100% ZRAM (zstd) + EarlyOOM (~14GB usable RAM)
+            - **Android Support:** Waydroid (native GPU-accelerated container) + Scrcpy (60fps screen mirror) + GSConnect
+            - **Windows Support:** Wine (32-bit & 64-bit multiarch) + Flathub Bottles
+            - **Futuristic Suite:** Starship prompt, Kitty terminal (frosted glass), Cava audio visualizer, Cmatrix, Hollywood HUD, Ollama AI engine
             
-            ### Verification
-            Verify the integrity of your download:
+            ### Verification Checksum
             ```bash
             sha256sum -c ${{ steps.prepare.outputs.iso_name }}.sha256
             ```

@@ -1,0 +1,54 @@
+#!/bin/bash
+# Futuristic Linux AI Assistant CLI
+
+PROMPT="$*"
+
+if [ -z "$PROMPT" ]; then
+    echo -e "\033[1;36m🤖 Futuristic OS AI Assistant\033[0m"
+    echo -e "Usage: \033[1;32mai <your question or command request>\033[0m"
+    echo -e "Example: \033[1;33mai check my battery health and iris xe gpu\033[0m"
+    echo -e "         \033[1;33mai mirror android phone screen\033[0m"
+    exit 0
+fi
+
+# Quick offline built-in intelligence heuristics for system operations
+case "$PROMPT" in
+    *"mirror"*|*"phone"*|*"android screen"*)
+        echo -e "\033[1;32m⚡ Running Scrcpy (Android Screen Mirroring)...\033[0m"
+        scrcpy --stay-awake --power-off-on-close
+        exit 0
+        ;;
+    *"hud"*|*"monitor"*|*"system stats"*)
+        echo -e "\033[1;36m🛸 Launching Cyberpunk Telemetry HUD...\033[0m"
+        btop
+        exit 0
+        ;;
+    *"matrix"*)
+        cmatrix -ab -u 4
+        exit 0
+        ;;
+    *"audio"*|*"equalizer"*|*"effects"*)
+        easyeffects &
+        exit 0
+        ;;
+    *"wine"*|*"windows"*)
+        echo -e "\033[1;35m🪟 Windows Apps Support: To launch any .exe, run: wine <filename.exe>\033[0m"
+        exit 0
+        ;;
+    *"battery"*)
+        upower -i $(upower -e | grep 'BAT')
+        exit 0
+        ;;
+    *"gpu"*|*"iris"*)
+        echo -e "\033[1;34m🔍 Intel Iris Xe Graphics Status:\033[0m"
+        vainfo 2>/dev/null || lspci -v -s $(lspci | grep -i 'VGA' | cut -d' ' -f1)
+        exit 0
+        ;;
+esac
+
+# If Ollama is running locally, route to Ollama local LLM
+if command -v ollama >/dev/null 2>&1 && pgrep -x "ollama" >/dev/null 2>&1; then
+    ollama run qwen2.5:1.5b "$PROMPT"
+else
+    echo -e "\033[1;36m[AI Assistant]\033[0m For command help: Try \033[1;32mtldr <command>\033[0m or start Ollama local AI with: \033[1;33mollama serve\033[0m"
+fi

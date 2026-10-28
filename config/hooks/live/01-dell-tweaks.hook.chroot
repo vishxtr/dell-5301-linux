@@ -18,10 +18,16 @@ echo "deb [signed-by=/etc/apt/trusted.gpg.d/waydroid.gpg] https://repo.waydroid.
 apt-get update || true
 apt-get install -y waydroid || true
 
-# 4. Configure Android USB udev rules (Plug & Play ADB/Scrcpy without permissions issues)
+# 4. Install Starship Futuristic Shell Prompt
+curl -sS https://starship.rs/install.sh | sh -s -- -y || true
+
+# 5. Install Ollama Local AI Engine
+curl -fsSL https://ollama.com/install.sh | sh || true
+
+# 6. Configure Android USB udev rules (Plug & Play ADB/Scrcpy without permissions issues)
 usermod -aG plugdev,dialout,video,audio user 2>/dev/null || true
 
-# 5. Enable essential systemd services
+# 7. Enable essential systemd services
 systemctl enable thermald || true
 systemctl enable power-profiles-daemon || true
 systemctl enable zramswap || true
@@ -31,7 +37,29 @@ systemctl enable pipewire || true
 systemctl enable wireplumber || true
 systemctl enable waydroid-container || true
 
-# 6. Set up dconf defaults for GNOME (Dark mode, Gestures, GSConnect)
+# 8. Set up Shell Aliases & Starship in /etc/skel/.bashrc
+cat <<'EOF' >> /etc/skel/.bashrc
+
+# Futuristic Terminal Enhancements
+alias cat='batcat'
+alias ll='ls -lah --color=auto'
+alias hud='btop'
+alias matrix='cmatrix -ab -u 4'
+alias mirror='scrcpy'
+alias visualizer='cava'
+
+# Launch Fastfetch HUD on shell start
+if [ -x "$(command -v fastfetch)" ]; then
+    fastfetch
+fi
+
+# Initialize Starship prompt
+if [ -x "$(command -v starship)" ]; then
+    eval "$(starship init bash)"
+fi
+EOF
+
+# 9. Set up dconf defaults for GNOME (Dark mode, Gestures, Futuristic UI)
 mkdir -p /etc/dconf/profile
 cat <<'EOF' > /etc/dconf/profile/user
 user-db:user
@@ -58,10 +86,10 @@ button-layout='appmenu:minimize,maximize,close'
 
 [org/gnome/shell]
 enabled-extensions=['gsconnect@andyholmes.github.io']
-favorite-apps=['firefox-esr.desktop', 'org.gnome.Nautilus.desktop', 'scrcpy.desktop', 'org.gnome.Terminal.desktop']
+favorite-apps=['kitty.desktop', 'firefox-esr.desktop', 'org.gnome.Nautilus.desktop', 'scrcpy.desktop', 'com.mattjakeman.ExtensionManager.desktop']
 EOF
 
 # Update dconf database
 dconf update || true
 
-echo "=== All Dell & Android/Windows Customizations Applied Successfully ==="
+echo "=== All Dell, Futuristic, Android & Windows Customizations Applied Successfully ==="
