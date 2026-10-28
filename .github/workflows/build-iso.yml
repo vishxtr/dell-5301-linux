@@ -49,7 +49,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y \
-            live-build \
+            git make \
             debian-archive-keyring \
             debootstrap \
             squashfs-tools \
@@ -63,6 +63,9 @@ jobs:
             rclone \
             curl \
             jq
+          # Install latest upstream Debian live-build from official Salsa repository
+          git clone --depth 1 https://salsa.debian.org/live-team/live-build.git /tmp/live-build
+          cd /tmp/live-build && sudo make install
 
       - name: Configure live-build
         run: |
@@ -88,7 +91,7 @@ jobs:
             --memtest none \
             --system live \
             --security false \
-            --apt-indices none \
+            --apt-indices false \
             --apt-recommends true \
             --iso-application "${{ inputs.distro_name || 'DellOS-5301' }}" \
             --iso-publisher "Custom OS Builder" \
