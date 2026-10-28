@@ -172,6 +172,22 @@ jobs:
           DIST_NAME="${{ inputs.distro_name || 'DellOS-5301' }}"
           FINAL_NAME=$(ls *.iso | head -n 1)
 
+          cat <<'EOF' > release_notes.md
+          ## 🚀 Futuristic Dell Inspiron 5301 Custom Linux Release
+          - **Target Laptop:** Dell Inspiron 5301 (11th Gen Core i5, Iris Xe Graphics, 8GB RAM)
+          - **Base OS:** Debian 12 Bookworm (Stable) + GNOME Wayland
+          - **Memory Optimization:** 100% ZRAM (zstd) + EarlyOOM (~14GB usable RAM)
+          - **Android Support:** Waydroid (native GPU-accelerated container) + Scrcpy (60fps screen mirror) + GSConnect
+          - **Windows Support:** Wine (32-bit & 64-bit multiarch) + Flathub Bottles
+          - **Futuristic Suite:** Starship prompt, Kitty terminal (frosted glass), Cava audio visualizer, Cmatrix, Hollywood HUD, Ollama AI engine
+
+          ### Verification
+          Verify the integrity of your download:
+          ```bash
+          sha256sum -c DellOS-5301-*.iso.sha256
+          ```
+          EOF
+
           # Delete existing release/tag with same name if already exists
           gh release delete "$TAG_NAME" --yes 2>/dev/null || true
 
@@ -179,15 +195,4 @@ jobs:
           gh release create "$TAG_NAME" \
             "$FINAL_NAME" "${FINAL_NAME}.sha256" \
             --title "${DIST_NAME} ${TAG_NAME}" \
-            --notes "## 🚀 Futuristic Dell Inspiron 5301 Custom Linux Release
-- **Target Laptop:** Dell Inspiron 5301 (11th Gen Core i5, Iris Xe Graphics, 8GB RAM)
-- **Base OS:** Debian 12 Bookworm (Stable) + GNOME Wayland
-- **Memory Optimization:** 100% ZRAM (zstd) + EarlyOOM (~14GB usable RAM)
-- **Android Support:** Waydroid (native GPU-accelerated container) + Scrcpy (60fps screen mirror) + GSConnect
-- **Windows Support:** Wine (32-bit & 64-bit multiarch) + Flathub Bottles
-- **Futuristic Suite:** Starship prompt, Kitty terminal (frosted glass), Cava audio visualizer, Cmatrix, Hollywood HUD, Ollama AI engine
-
-### Verification Checksum
-\`\`\`bash
-sha256sum -c ${FINAL_NAME}.sha256
-\`\`\`"
+            --notes-file release_notes.md
