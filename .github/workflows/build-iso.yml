@@ -162,25 +162,32 @@ jobs:
             echo "Notice: RCLONE_CONFIG secret is not configured. Skipping Google Drive upload."
           fi
 
-      - name: Create GitHub Release & Upload ISO
-        uses: softprops/action-gh-release@v2
+      - name: Create GitHub Release & Upload ISO (via official gh CLI)
         if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch' || github.event_name == 'push'
-        with:
-          tag_name: ${{ inputs.release_tag || format('v1.0.{0}', github.run_number) }}
-          name: "${{ inputs.distro_name || 'DellOS-5301' }} ${{ inputs.release_tag || format('v1.0.{0}', github.run_number) }}"
-          body: |
-            ## 🚀 Futuristic Dell Inspiron 5301 Custom Linux Release
-            - **Target Laptop:** Dell Inspiron 5301 (11th Gen Core i5, Iris Xe Graphics, 8GB RAM)
-            - **Base OS:** Debian 12 Bookworm (Stable) + GNOME Wayland
-            - **Memory Optimization:** 100% ZRAM (zstd) + EarlyOOM (~14GB usable RAM)
-            - **Android Support:** Waydroid (native GPU-accelerated container) + Scrcpy (60fps screen mirror) + GSConnect
-            - **Windows Support:** Wine (32-bit & 64-bit multiarch) + Flathub Bottles
-            - **Futuristic Suite:** Starship prompt, Kitty terminal (frosted glass), Cava audio visualizer, Cmatrix, Hollywood HUD, Ollama AI engine
-            
-            ### Verification Checksum
-            ```bash
-            sha256sum -c ${{ steps.prepare.outputs.iso_name }}.sha256
-            ```
-          files: |
-            ${{ steps.prepare.outputs.iso_path }}
-            ${{ steps.prepare.outputs.checksum_path }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          cd build
+          TAG_NAME="${{ inputs.release_tag || format('v1.0.{0}', github.run_number) }}"
+          DIST_NAME="${{ inputs.distro_name || 'DellOS-5301' }}"
+          FINAL_NAME=$(ls *.iso | head -n 1)
+
+          # Delete existing release/tag with same name if already exists
+          gh release delete "$TAG_NAME" --yes 2>/dev/null || true
+
+          echo "Publishing release $TAG_NAME with large-file chunked upload..."
+          gh release create "$TAG_NAME" \
+            "$FINAL_NAME" "${FINAL_NAME}.sha256" \
+            --title "${DIST_NAME} ${TAG_NAME}" \
+            --notes "## 🚀 Futuristic Dell Inspiron 5301 Custom Linux Release
+- **Target Laptop:** Dell Inspiron 5301 (11th Gen Core i5, Iris Xe Graphics, 8GB RAM)
+- **Base OS:** Debian 12 Bookworm (Stable) + GNOME Wayland
+- **Memory Optimization:** 100% ZRAM (zstd) + EarlyOOM (~14GB usable RAM)
+- **Android Support:** Waydroid (native GPU-accelerated container) + Scrcpy (60fps screen mirror) + GSConnect
+- **Windows Support:** Wine (32-bit & 64-bit multiarch) + Flathub Bottles
+- **Futuristic Suite:** Starship prompt, Kitty terminal (frosted glass), Cava audio visualizer, Cmatrix, Hollywood HUD, Ollama AI engine
+
+### Verification Checksum
+\`\`\`bash
+sha256sum -c ${FINAL_NAME}.sha256
+\`\`\`"
