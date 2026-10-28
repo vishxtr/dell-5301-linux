@@ -1,0 +1,47 @@
+#!/bin/sh
+set -e
+
+echo "=== Applying Dell Inspiron 5301 Customizations ==="
+
+# Enable essential systemd services
+systemctl enable thermald || true
+systemctl enable power-profiles-daemon || true
+systemctl enable zramswap || true
+systemctl enable earlyoom || true
+systemctl enable gdm3 || true
+systemctl enable pipewire || true
+systemctl enable wireplumber || true
+
+# Set up dconf defaults for GNOME
+mkdir -p /etc/dconf/profile
+cat <<'EOF' > /etc/dconf/profile/user
+user-db:user
+system-db:local
+EOF
+
+mkdir -p /etc/dconf/db/local.d
+cat <<'EOF' > /etc/dconf/db/local.d/01-dell-defaults
+[org/gnome/desktop/interface]
+color-scheme='prefer-dark'
+gtk-theme='Adwaita-dark'
+show-battery-percentage=true
+font-name='Inter 10'
+document-font-name='Inter 10'
+monospace-font-name='JetBrains Mono 10'
+
+[org/gnome/desktop/peripherals/touchpad]
+tap-to-click=true
+natural-scroll=true
+two-finger-scrolling-enabled=true
+
+[org/gnome/desktop/wm/preferences]
+button-layout='appmenu:minimize,maximize,close'
+
+[org/gnome/shell]
+favorite-apps=['firefox-esr.desktop', 'org.gnome.Nautilus.desktop', 'org.gnome.Terminal.desktop']
+EOF
+
+# Update dconf database
+dconf update || true
+
+echo "=== Dell Inspiron 5301 Tweaks Applied Successfully ==="

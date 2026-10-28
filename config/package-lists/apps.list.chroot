@@ -1,0 +1,17 @@
+# Essential User Apps
+firefox-esr
+mpv
+fastfetch
+curl
+wget
+git
+nano
+vim
+unzip
+tar
+p7zip-full
+ca-certificates
+
+# Graphical System Installer (Dual-boot alongside Windows)
+calamares
+calamares-settings-debian

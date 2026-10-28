@@ -1,0 +1,172 @@
+name: Build Custom Linux ISO
+
+on:
+  push:
+    branches: [ main ]
+    paths-ignore:
+      - 'README.md'
+      - '.gitignore'
+  workflow_dispatch:
+    inputs:
+      distro_name:
+        description: 'Distro Name'
+        required: true
+        default: 'CustomOS'
+      release_tag:
+        description: 'Release Tag (e.g. v1.0.0)'
+        required: true
+        default: 'v1.0.0'
+      upload_gdrive:
+        description: 'Upload to Google Drive? (Requires RCLONE_CONFIG secret)'
+        type: boolean
+        required: true
+        default: true
+
+jobs:
+  build:
+    name: Build Debian GNOME Live ISO
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Free Disk Space on Runner
+        run: |
+          echo "=== Disk space before cleanup ==="
+          df -h
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /usr/local/lib/android
+          sudo rm -rf /opt/ghc
+          sudo rm -rf /opt/hostedtoolcache/CodeQL
+          sudo docker image prune --all --force || true
+          echo "=== Disk space after cleanup ==="
+          df -h
+
+      - name: Install Build Dependencies & Tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            live-build \
+            debian-archive-keyring \
+            debootstrap \
+            squashfs-tools \
+            xorriso \
+            isolinux \
+            syslinux-efi \
+            grub-pc-bin \
+            grub-efi-amd64-bin \
+            mtools \
+            dosfstools \
+            rclone \
+            curl \
+            jq
+
+      - name: Configure live-build
+        run: |
+          mkdir -p build && cd build
+          
+          # Initialize live-build configuration
+          sudo lb config \
+            --distribution bookworm \
+            --archive-areas "main contrib non-free non-free-firmware" \
+            --architectures amd64 \
+            --linux-flavours amd64 \
+            --binary-images iso-hybrid \
+            --bootloader grub-efi \
+            --memtest none \
+            --system live \
+            --apt-indices none \
+            --apt-recommends true \
+            --iso-application "${{ inputs.distro_name || 'CustomOS' }}" \
+            --iso-publisher "Custom OS Builder" \
+            --iso-volume "${{ inputs.distro_name || 'CustomOS' }}-$(date +%Y%m%d)"
+
+          # Copy custom package lists
+          sudo mkdir -p config/package-lists
+          sudo cp -r ../config/package-lists/* config/package-lists/
+
+          # Copy custom filesystem includes (branding, configs, skel)
+          if [ -d "../config/includes.chroot" ]; then
+            sudo mkdir -p config/includes.chroot
+            sudo cp -r ../config/includes.chroot/* config/includes.chroot/
+          fi
+
+          # Copy custom chroot hooks
+          if [ -d "../config/hooks" ]; then
+            sudo mkdir -p config/hooks
+            sudo cp -r ../config/hooks/* config/hooks/
+          fi
+
+      - name: Build ISO
+        run: |
+          cd build
+          echo "=== Starting ISO Build ==="
+          sudo lb build 2>&1 | tee build.log
+
+      - name: Prepare Artifacts & Checksums
+        id: prepare
+        run: |
+          cd build
+          ISO_FILE=$(ls *.iso 2>/dev/null | head -n 1)
+          if [ -z "$ISO_FILE" ]; then
+            echo "ERROR: ISO file was not generated!"
+            exit 1
+          fi
+
+          DIST_NAME="${{ inputs.distro_name || 'CustomOS' }}"
+          FINAL_NAME="${DIST_NAME}-$(date +%Y%m%d)-amd64.iso"
+          sudo mv "$ISO_FILE" "$FINAL_NAME"
+
+          echo "Generating SHA256 checksum..."
+          sha256sum "$FINAL_NAME" > "${FINAL_NAME}.sha256"
+
+          ls -lh "$FINAL_NAME" "${FINAL_NAME}.sha256"
+
+          echo "iso_path=build/${FINAL_NAME}" >> $GITHUB_OUTPUT
+          echo "iso_name=${FINAL_NAME}" >> $GITHUB_OUTPUT
+          echo "checksum_path=build/${FINAL_NAME}.sha256" >> $GITHUB_OUTPUT
+
+      - name: Upload ISO to Google Drive (via rclone)
+        if: ${{ inputs.upload_gdrive == true || github.event_name == 'push' }}
+        env:
+          RCLONE_CONFIG_DATA: ${{ secrets.RCLONE_CONFIG }}
+        run: |
+          if [ -n "$RCLONE_CONFIG_DATA" ]; then
+            echo "Configuring rclone..."
+            mkdir -p ~/.config/rclone
+            echo "$RCLONE_CONFIG_DATA" > ~/.config/rclone/rclone.conf
+            
+            echo "Uploading ${{ steps.prepare.outputs.iso_name }} to Google Drive..."
+            rclone copy "${{ steps.prepare.outputs.iso_path }}" gdrive:CustomOS-ISOs/ --progress
+            rclone copy "${{ steps.prepare.outputs.checksum_path }}" gdrive:CustomOS-ISOs/ --progress
+            echo "Google Drive upload completed successfully!"
+          else
+            echo "Notice: RCLONE_CONFIG secret is not configured. Skipping Google Drive upload."
+            echo "To enable Google Drive upload, add your rclone.conf contents as RCLONE_CONFIG in GitHub Repository Secrets."
+          fi
+
+      - name: Create GitHub Release & Upload ISO
+        uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
+        with:
+          tag_name: ${{ inputs.release_tag || format('v{0}', github.run_number) }}
+          name: "${{ inputs.distro_name || 'CustomOS' }} ${{ inputs.release_tag || format('v{0}', github.run_number) }}"
+          body: |
+            ## Custom Linux Distribution Release
+            - **Base:** Debian 12 Bookworm (Stable)
+            - **Desktop Environment:** GNOME (Wayland + X11)
+            - **Architecture:** x86_64 (amd64)
+            - **Kernel:** Linux amd64 with full non-free hardware firmware
+            - **Built on:** ${{ github.event.repository.updated_at }}
+            
+            ### Verification
+            Verify the integrity of your download:
+            ```bash
+            sha256sum -c ${{ steps.prepare.outputs.iso_name }}.sha256
+            ```
+          files: |
+            ${{ steps.prepare.outputs.iso_path }}
+            ${{ steps.prepare.outputs.checksum_path }}

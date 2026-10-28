@@ -1,0 +1,26 @@
+# GNOME Desktop Environment
+gnome-core
+gdm3
+gnome-tweaks
+gnome-shell-extensions
+gnome-terminal
+nautilus
+
+# PipeWire Modern Audio Stack (Low Latency, Bluetooth AAC/LDAC)
+pipewire
+pipewire-audio
+wireplumber
+pipewire-pulse
+pipewire-alsa
+libspa-0.2-bluetooth
+
+# Touchpad, Gestures & Wayland Graphics
+xwayland
+libinput-bin
+libinput-tools
+
+# Modern Fonts & Icons
+fonts-inter
+fonts-jetbrains-mono
+fonts-noto-color-emoji
+papirus-icon-theme

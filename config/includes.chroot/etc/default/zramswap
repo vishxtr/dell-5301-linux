@@ -1,0 +1,10 @@
+# ZRAM Configuration for Dell Inspiron 5301 (8GB RAM)
+
+# Compression algorithm: zstd gives the best compression ratio and speed
+ALGO=zstd
+
+# Allocate 100% of physical RAM as compressed swap pool
+PERCENT=100
+
+# High priority so it is chosen over any disk swap
+PRIORITY=100

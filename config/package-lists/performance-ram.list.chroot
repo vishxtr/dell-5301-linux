@@ -1,0 +1,10 @@
+# RAM Optimization for 8GB Memory
+zram-tools
+earlyoom
+
+# Performance Monitoring & Power Utilities
+btop
+powertop
+pciutils
+usbutils
+lshw
