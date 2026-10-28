@@ -1,5 +1,9 @@
 # Custom Debian GNOME ISO for Dell Inspiron 5301
 
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/vishxtr/dell-5301-linux/blob/main/DellOS_Colab_Builder.ipynb)
+
+> **Google Colab 1-Click Hub:** Use Google Colab to assemble or compile the single **full, un-split 3.72 GB ISO** directly into your **5 TB Google Drive**!
+
 Tailored custom Linux distribution ISO optimized specifically for **Dell Inspiron 5301 (11th Gen Intel Core i5, Intel Iris Xe Graphics, 8GB RAM)** with built-in **Android & Windows integration**.
 
 ---
