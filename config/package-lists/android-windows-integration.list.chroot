@@ -1,5 +1,4 @@
 # Android Mirroring, Control & Phone Connectivity
-scrcpy
 adb
 fastboot
 android-sdk-platform-tools-common

@@ -3,10 +3,12 @@ set -e
 
 echo "=== Applying Dell Inspiron 5301 Customizations ==="
 
-# 1. Enable 32-bit architecture for complete Windows App support (Wine32)
+# 1. Enable Debian Backports & 32-bit architecture for modern tools (Scrcpy, Wine32)
 dpkg --add-architecture i386 || true
+echo "deb http://deb.debian.org/debian bookworm-backports main contrib non-free" > /etc/apt/sources.list.d/backports.list
 apt-get update || true
 apt-get install -y --no-install-recommends wine32 libwine:i386 || true
+apt-get install -t bookworm-backports -y scrcpy fastfetch 2>/dev/null || apt-get install -y scrcpy 2>/dev/null || true
 
 # 2. Add Flathub Repository for 1-click Windows/Android helper apps (Bottles, etc.)
 flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo || true
